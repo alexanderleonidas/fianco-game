@@ -1,2 +1,2 @@
-# fianco-game
-This repository is intended to be used at the end of course on Intelligent Search and Games for 
+# Fianco Tournament
+This repository is intended to be used at the end of course: Intelligent Search and Games, to participate in a tournament between students. 
