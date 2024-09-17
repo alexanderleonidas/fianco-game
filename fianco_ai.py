@@ -1,40 +1,39 @@
-import math
 from fianco_game import FiancoGame
+import numpy as np
+from typing import Tuple
+class FiancoAI():
+    def __init__(self) -> None:
+        pass
 
-def negamax_alpha_beta(game: FiancoGame, depth, alpha, beta, color):
-    if depth == 0 or game.is_game_over():
-        return color * evaluate(game)
+    def negamax(self, game: FiancoGame, depth: int, alpha: float, beta: float, color: int) -> float:
+    # Negamax algorithm for AI move evaluation
+        if depth == 0 or game.is_terminal():
+            return color * game.evaluate()
 
-    max_eval = -math.inf
-    for move in game.get_valid_moves():
-        game.make_move(*move)
-        _eval = -negamax_alpha_beta(game, depth - 1, -beta, -alpha, -color)
-        # game.undo_move(*move)  # Assuming we implement an undo_move method
-        game.undo_move()
-        max_eval = max(max_eval, _eval)
-        alpha = max(alpha, _eval)
-        if alpha >= beta:
-            break
-    return max_eval
+        max_value = float('-inf')
+        for move in game.get_possible_moves(game.current_player):
+            game_copy = FiancoGame()
+            game_copy.board = np.copy(game.board)
+            game_copy.current_player = game.current_player
+            game_copy.make_move(move)
+            value = -self.negamax(game_copy, depth - 1, -beta, -alpha, -color)
+            max_value = max(max_value, value)
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return max_value
 
-def evaluate(game: FiancoGame):
-    # This is a simple evaluation function. You might want to improve it.
-    player1_score = sum(1 for x in range(9) for y in range(9) if game.board[x, y] == 1)
-    player2_score = sum(1 for x in range(9) for y in range(9) if game.board[x, y] == 2)
-    return player1_score - player2_score
-
-def get_best_move(game: FiancoGame, depth):
-    best_move = None
-    max_eval = -math.inf
-    alpha = -math.inf
-    beta = math.inf
-    for move in game.get_valid_moves():
-        game.make_move(*move)
-        _eval = -negamax_alpha_beta(game, depth - 1, -beta, -alpha, -1)
-        # game.undo_move(*move)
-        game.undo_move()
-        if _eval > max_eval:
-            max_eval = _eval
-            best_move = move
-        alpha = max(alpha, _eval)
-    return best_move
+    def get_ai_move(self, game: FiancoGame, depth: int) -> Tuple[int, int, int, int]:
+        # Get the best move for the AI using the negamax algorithm
+        best_move = None
+        best_value = float('-inf')
+        for move in game.get_possible_moves(game.current_player):
+            game_copy = FiancoGame()
+            game_copy.board = np.copy(game.board)
+            game_copy.current_player = game.current_player
+            game_copy.make_move(move)
+            value = -self.negamax(game_copy, depth - 1, float('-inf'), float('inf'), -1)
+            if value > best_value:
+                best_value = value
+                best_move = move
+        return best_move
