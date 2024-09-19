@@ -49,7 +49,7 @@ class Board:
                     piece.draw(self.board_surface)
                     
         # screen.blit(self.board_surface, ((WIDTH - BOARD_WIDTH) // 2, (HEIGHT - BOARD_HEIGHT) // 2))
-        screen.blit(self.board_surface, ((0, 0)))
+        screen.blit(self.board_surface, (0, 0))
 
 
     def draw_highlights(self):
