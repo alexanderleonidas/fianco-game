@@ -1,37 +1,21 @@
-import pygame
-from constants import *
+from const import *
 
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (185, 185, 185)
-
-
-class Piece():
-    def __init__(self, row, col, color) -> None:
-        self.col = col
-        self.row = row
-        self.pixel_row = 0
-        self.pixel_col = 0
+class Piece:
+    def __init__(self, name, color, value):
+        self.name = name
         self.color = color
-        self.selected = False
-        self.translate_board_to_pixel_coord()
-    
-    def draw(self, surface):
-        if self.selected:
-            pygame.draw.circle(surface, RED, (self.pixel_col, self.pixel_row), SQUARE_SIZE//2-12)
-        elif self.color == BLACK:
-            pygame.draw.circle(surface, GRAY, (self.pixel_col, self.pixel_row), SQUARE_SIZE//2-12)
-        elif self.color == WHITE:
-            pygame.draw.circle(surface, BLACK, (self.pixel_col, self.pixel_row), SQUARE_SIZE//2-12)
-        pygame.draw.circle(surface, self.color, (self.pixel_col, self.pixel_row), SQUARE_SIZE//2-15)
-    
-    def translate_board_to_pixel_coord(self):
-        self.pixel_col = self.col * SQUARE_SIZE + SQUARE_SIZE // 2
-        self.pixel_row = self.row * SQUARE_SIZE + SQUARE_SIZE // 2
-    
-    def select(self, selected=True):
-        self.selected = selected
+        value_sign = 1 if color == WHITE else -1 # Value sign needed for AI so white is positive and black in negative
+        self.value = value * value_sign
+        self.valid_moves = []
+        self.moved = False
 
-    def __str__(self):
-        return f"{self.color}_{self.row}_{self.col}"
+    def add_moves(self, move):
+        self.valid_moves.append( move)
+    
+    def clear_moves(self):
+        self.valid_moves = []
+
+class Circle(Piece):
+    def __init__(self, color):
+        self.direction = -1 if color == WHITE else 1
+        super().__init__('Circle', color, 1.0)

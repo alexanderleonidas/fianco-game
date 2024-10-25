@@ -1,157 +1,104 @@
-from board import Board
-from piece import Piece
-from constants import *
-import pygame
 import time
-import random
+import pygame
+from const import *
+from board import Board
+from move import Move
+from mover import Mover
+from square import Square
+from ai import AI
 
-class Game():
-    def __init__(self) -> None:
-        pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("FIANCO")
-        self.board = Board(BOARD_WIDTH, BOARD_HEIGHT)
-        self.running = True
-        self.selected_piece = None
-        self.current_player = WHITE
-        self.game_over = False
-        self.white_time = 600  # 10 minutes in seconds
-        self.black_time = 600
-        self.start_time = time.time()
-        self.title_font = pygame.font.Font(None, 36)
-        self.info_font = pygame.font.Font(None, 24)
+class Game:
+    def __init__(self):
+        self.board = Board()
+        self.mover = Mover()
+        self.player = WHITE
+        self.ai = AI()
+        self.game_mode = 'pvp' # pvp or ai
+
+    def next_turn(self):
+        self.player = WHITE if self.player == BLACK else BLACK
     
-    def run(self):
-        while self.running:
-            self.handle_events()
-            self.update()
-            self.draw()
-        pygame.quit()
+    def reset(self):
+        self.__init__()
+    
+    def select_piece(self, piece, pos, row: int, col: int):
+        if piece.color == self.player:
+            self.board.calculate_moves(piece, row, col)
+            self.mover.save_initial(pos)
+            self.mover.pick_piece(piece)
+    
+    def move_piece(self, final_row: int, final_col: int):
+        piece = self.mover.piece
+        move = Move(Square(self.mover.initial_row, self.mover.initial_col), Square(final_row, final_col))
+        if self.board.valid_moves(piece, move):
+            self.board.move_piece(piece, move)
+            self.next_turn()
+            self.mover.unpick_piece()
+        elif self.board.state[final_row][final_col].is_empty():
+            self.mover.unpick_piece()
+    
+    def unmove_piece(self):
+        self.board.undo_move()
+        self.next_turn()
+    
+    def show_last_move(self, surface):
+        if self.board.last_move:
+            initial = self.board.last_move.initial
+            final = self.board.last_move.final
 
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and not self.game_over:
-                self.handle_mouse_click(event.pos)
+            for pos in [initial, final]:
+                color = NEON_GREEN if (pos.row + pos.col) % 2 == 0 else DARK_NEON_GREEN
+                rect = (pos.col * SQUARE_SIZE, pos.row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+                pygame.draw.rect(surface, color, rect)
 
-    def handle_mouse_click(self, pos):
-        col, row = self.get_square_clicked(pos[0], pos[1])
-        if (row, col) != (None, None):
-            if self.selected_piece is None:
-                if self.board.state[row][col] != EMPTY_SPACE and self.board.state[row][col].color == self.current_player:
-                    self.selected_piece = self.board.state[row][col]
-                    self.selected_piece.select(True)
-                    self.board.highlight_squares = self.board.get_valid_moves(self.selected_piece)
-            else:
-                valid_moves = self.board.get_valid_moves(self.selected_piece)
-                if (row, col) in valid_moves:
-                    self.board.move_piece(self.selected_piece, row, col)
-                    self.selected_piece.select(False)
-                    self.selected_piece = None
-                    self.board.highlight_squares = []
-                    self.switch_player()
+    def show_background(self, surface):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if (row + col) % 2 == 0:
+                    color = LIGHT_GREEN
                 else:
-                    self.selected_piece.select(False)
-                    self.selected_piece = None
-                    self.board.highlight_squares = []
+                    color = DARK_GREEN
+                rect = (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+                pygame.draw.rect(surface, color, rect)
+        
+                # row coordinates
+                if col == 0:
+                    color = BLACK if row % 2 == 0 else GRAY
+                    lbl = pygame.font.SysFont('monospace', 18, bold=True).render(str(ROWS-row), 1, color)
+                    lbl_pos = (5, 5 + row * SQUARE_SIZE)
+                    surface.blit(lbl, lbl_pos)
 
-    def switch_player(self):
-        self.current_player = BLACK if self.current_player == WHITE else WHITE
-        if self.current_player == BLACK:
-            self.computer_move()
-
-    def computer_move(self):
-        # Simple AI: randomly choose a valid move
-        pieces = [piece for row in self.board.state for piece in row if isinstance(piece, Piece) and piece.color == BLACK]
-        random.shuffle(pieces)
-        for piece in pieces:
-            moves = self.board.get_valid_moves(piece)
-            if moves:
-                move = random.choice(moves)
-                self.board.move_piece(piece, move[0], move[1])
-                self.switch_player()
-                break
-
-    def update(self):
-        if not self.game_over:
-            if self.current_player == WHITE:
-                self.white_time -= time.time() - self.start_time
-            else:
-                self.black_time -= time.time() - self.start_time
-            self.start_time = time.time()
-
-            if self.white_time <= 0 or self.black_time <= 0:
-                self.game_over = True
-                return
-
-            if self.board.check_win_condition(WHITE):
-                self.game_over = True
-                print("White wins!")
-            elif self.board.check_win_condition(BLACK):
-                self.game_over = True
-                print("Black wins!")
-            elif self.board.check_threefold_repetition():
-                self.game_over = True
-                print("Draw by threefold repetition!")
-            elif self.board.check_no_moves(self.current_player) or self.board.check_no_pieces(self.current_player):
-                self.game_over = True
-                print(f"{'Black' if self.current_player == WHITE else 'White'} wins!")
-
-    def draw(self):
-        self.screen.fill(WHITE)
-        self.board.draw(self.screen)
-        self.draw_info_panel()
-        pygame.display.flip()
-
-    def draw_info_panel(self):
-        info_surface = pygame.Surface((INFO_PANEL_WIDTH, HEIGHT))
-        info_surface.fill(LIGHT_BROWN)
-
-        # Draw title
-        title = self.title_font.render("FIANCO", True, BLACK)
-        info_surface.blit(title, (INFO_PANEL_WIDTH // 2 - title.get_width() // 2, 10))
-
-        # Draw timers
-        white_timer = self.info_font.render(f"White: {self.format_time(self.white_time)}", True, BLACK)
-        black_timer = self.info_font.render(f"Black: {self.format_time(self.black_time)}", True, BLACK)
-        info_surface.blit(white_timer, (10, 60))
-        info_surface.blit(black_timer, (10, 90))
-
-        # Draw current player
-        current_player = self.info_font.render(f"Current Player: {'White' if self.current_player == WHITE else 'Black'}", True, BLACK)
-        info_surface.blit(current_player, (10, 120))
-
-        # Draw move history
-        history_title = self.info_font.render("Move History", True, BLACK)
-        info_surface.blit(history_title, (10, 160))
-
-        y_offset = 190
-        for i, move in enumerate(self.board.move_history[-15:]):  # Show last 15 moves
-            color = BLACK if i % 2 == 0 else GRAY
-            move_number = len(self.board.move_history) - len(self.board.move_history[-15:]) + i + 1
-            if i % 2 == 0:
-                text = self.info_font.render(f"{move_number}. {move}", True, color)
-            else:
-                text = self.info_font.render(f"    {move}", True, color)
-            info_surface.blit(text, (10, y_offset))
-            y_offset += 25
-
-        self.screen.blit(info_surface, (BOARD_WIDTH, 0))
-
-    def format_time(self, seconds):
-        minutes, secs = divmod(int(seconds), 60)
-        return f"{minutes:02d}:{secs:02d}"
-
-    def get_square_clicked(self, mousex, mousey):
-        if mousex < BOARD_WIDTH:
-            col = mousex // SQUARE_SIZE
-            row = mousey // SQUARE_SIZE
-            if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
-                return col, row
-        return None, None
+                # col coordinates
+                if row == 8:
+                    # color
+                    color = BLACK if (row + col) % 2 == 0 else GRAY
+                    # label
+                    lbl = pygame.font.SysFont('monospace', 18, bold=True).render(Square.get_alphacol(col), 1, color)
+                    lbl_pos = (col * SQUARE_SIZE + SQUARE_SIZE - 20, HEIGHT - 20)
+                    # blit
+                    surface.blit(lbl, lbl_pos)
     
+    def show_moves(self, surface):
+        if self.mover.selected:
+            piece = self.mover.piece
+            for move in piece.valid_moves:
+                color = '#C86464' if (move.final.row + move.final.col) % 2 == 0 else '#C84646'
+                rect = (move.final.col * SQUARE_SIZE, move.final.row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+                pygame.draw.rect(surface, color, rect)
 
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+    def show_pieces(self, surface):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.board.state[row][col].has_piece():
+                    color = self.board.state[row][col].piece.color
+                    center = col * SQUARE_SIZE + SQUARE_SIZE // 2, row * SQUARE_SIZE + SQUARE_SIZE // 2
+                    self._draw_piece(surface, color, center, self.mover.piece == self.board.state[row][col].piece)
+    
+    def _draw_piece(self, surface, color, center, selected):
+        if selected:
+            pygame.draw.circle(surface, RED, center, SQUARE_SIZE//2-12)
+        elif color == BLACK:
+            pygame.draw.circle(surface, GRAY, center, SQUARE_SIZE//2-12)
+        elif color == WHITE:
+            pygame.draw.circle(surface, BLACK, center, SQUARE_SIZE//2-12)
+        pygame.draw.circle(surface, color, center, SQUARE_SIZE//2-15)

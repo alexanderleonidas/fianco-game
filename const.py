@@ -1,0 +1,18 @@
+# Screen Dimensions
+WIDTH = 900
+HEIGHT = 900
+
+# Board Dimensions
+ROWS = 9
+COLS = 9
+SQUARE_SIZE = WIDTH // COLS
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+LIGHT_GREEN = (234, 235, 200)
+DARK_GREEN = (119, 154, 88)
+GRAY = (185, 185, 185)
+RED = (255, 0, 0)
+NEON_GREEN = (244, 247, 116)
+DARK_NEON_GREEN = (172, 195, 51)
