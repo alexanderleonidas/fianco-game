@@ -6,6 +6,7 @@ class Move:
         # Initial and final squares
         self.initial = initial
         self.final = final
+        self.capture = False
     
     def __str__(self):
         return self.convert_to_notation()
@@ -19,6 +20,7 @@ class Move:
         to_square = f"{Square.ALPHACOLS[self.final.col]}{ROWS - self.final.row}"
         
         if capture:
+            self.capture = capture
             return f"{from_square}x{to_square}"
         else:
             return f"{from_square}-{to_square}"
@@ -28,10 +30,8 @@ class Move:
         # Check if it's a capture move
         if 'x' in notation:
             from_square, to_square = notation.split('x')
-            is_capture = True
         else:
             from_square, to_square = notation.split('-')
-            is_capture = False
         
         # Create reverse mapping of ALPHACOLS for easy lookup
         COL_NUMS = {v: k for k, v in Square.ALPHACOLS.items()}
@@ -45,4 +45,4 @@ class Move:
         final_row = ROWS - int(to_square[1])
 
         
-        return Move(Square(initial_row, initial_col), Square(final_row, final_col)), is_capture
+        return Move(Square(initial_row, initial_col), Square(final_row, final_col))

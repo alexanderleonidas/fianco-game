@@ -38,8 +38,10 @@ class Game:
             self.mover.unpick_piece()
     
     def unmove_piece(self):
-        self.board.undo_move()
-        self.next_turn()
+        if len(self.board.move_history) != 0:
+            self.board.undo_move()
+            self.next_turn()
+            self.mover.unpick_piece()
     
     def show_last_move(self, surface):
         if self.board.last_move:

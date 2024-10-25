@@ -40,9 +40,7 @@ class Main:
                         game.move_piece(clicked_row, clicked_col)
                     
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
-                    print(game.board.last_move)
                     game.unmove_piece()
-                    print(game.board.last_move)
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                         game.reset()
                         game = self.game

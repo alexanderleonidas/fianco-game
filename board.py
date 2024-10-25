@@ -8,6 +8,7 @@ class Board:
     def __init__(self):
         self.state = [[0,0,0,0,0,0,0,0,0] for _ in range(COLS)]
         self.last_move = None
+        self.captured_pieces = {WHITE: [], BLACK: []}
         self.state_history = []
         self.move_history = []
         self._create()
@@ -22,6 +23,8 @@ class Board:
         if abs(initial.row - final.row) == 2:
             captured_row = (initial.row + final.row) // 2
             captured_col = (initial.col + final.col) // 2
+            captured_piece = self.state[captured_row][captured_col].piece
+            self.captured_pieces[WHITE if captured_piece.color == BLACK else BLACK].append(captured_piece)
             self.state[captured_row][captured_col].piece = None
             capture = True
 
@@ -41,6 +44,13 @@ class Board:
         final = self.last_move.final
         piece = self.state[final.row][final.col].piece
 
+        # Check for capture
+        if abs(initial.row - final.row) == 2:
+            captured_row = (initial.row + final.row) // 2
+            captured_col = (initial.col + final.col) // 2
+            captured_piece = self.captured_pieces[piece.color].pop()
+            self.state[captured_row][captured_col].piece = captured_piece
+
         # Undo the move in the baord state
         self.state[initial.row][initial.col].piece = piece
         self.state[final.row][final.col].piece = None
@@ -49,12 +59,14 @@ class Board:
         self.move_history.pop()
         self.state_history.pop()
         # Check if they are the first moves of the players
-        if len(self.move_history) == 0 and piece.color == WHITE:
+        if len(self.move_history) == 0:
             piece.moved = False
             self.last_move = None
-        elif len(self.move_history) == 1 and piece.color == BLACK:
+        elif len(self.move_history) == 1:
             piece.moved = False
             self.last_move = Move.convert_to_move(self.move_history[0])
+        else:
+            self.last_move = Move.convert_to_move(self.move_history[-1])
         piece.clear_moves()
 
     def valid_moves(self, piece, move):
