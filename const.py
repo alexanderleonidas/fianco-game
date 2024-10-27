@@ -2,6 +2,9 @@
 WIDTH = 900
 HEIGHT = 900
 
+POPUP_WIDTH = 400
+POPUP_HEIGHT = 400
+
 # Board Dimensions
 ROWS = 9
 COLS = 9

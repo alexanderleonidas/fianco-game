@@ -35,16 +35,16 @@ class Board:
         piece.moved = True
         piece.clear_moves()
         self.move_history.append(move.convert_to_notation(capture))
-        self.last_move = move
-        print('Move History ', self.move_history)
         self.state_history.append(self._get_state_hash())
-    
+        self.last_move = move
+        print('Move :', move)
+
     def undo_move(self):
         initial = self.last_move.initial
         final = self.last_move.final
         piece = self.state[final.row][final.col].piece
 
-        # Check for capture
+        # Check for capture and undo
         if abs(initial.row - final.row) == 2:
             captured_row = (initial.row + final.row) // 2
             captured_col = (initial.col + final.col) // 2
@@ -86,17 +86,19 @@ class Board:
                         initial = Square(row, col)
                         if self.state[possible_row][possible_col].has_opponent(piece.color) and name == 'capture':
                             # Calculate the landing square for capture
-                            capture_row = possible_row + piece.direction
-                            capture_col = possible_col + (1 if possible_col > col else -1)
-                            if Square.in_range(capture_row, capture_col) and self.state[capture_row][capture_col].is_empty():
-                                final = Square(capture_row, capture_col)
+                            land_row = possible_row + piece.direction
+                            land_col = possible_col + (1 if possible_col > col else -1)
+                            if Square.in_range(land_row, land_col) and self.state[land_row][land_col].is_empty():
+                                final = Square(land_row, land_col)
                                 move = Move(initial, final)
-                                piece.add_moves(move) # append new legal moves to piece class
+                                if move not in piece.valid_moves:
+                                    piece.add_moves(move) # append new legal moves to piece class
                         if self.state[possible_row][possible_col].is_empty() and name == 'translation':
                             # Calculate the landing square for movement
                             final = Square(possible_row, possible_col)
                             move = Move(initial, final)
-                            piece.add_moves(move)
+                            if move not in piece.valid_moves:
+                                piece.add_moves(move)
     
     def final_state(self, color=WHITE):
         # Function to check win conditions and draw conditions
@@ -139,23 +141,24 @@ class Board:
     def _check_threefold_repetition(self):
         if len(self.state_history) < 6:  # Need at least 6 moves for a threefold repetition
             return False
-        current_state = self.history[-1]
+        current_state = self.state_history[-1]
         return self.state_history.count(current_state) >= 3
     
     def _check_win_condition(self, color):
         if color == WHITE:
-            return any(isinstance(self.state[0][i], Circle) and self.state[0][i].color == WHITE for i in range(ROWS))
-        else:
-            return any(isinstance(self.state[8][i], Circle) and self.state[8][i].color == BLACK for i in range(ROWS))
+            return any(isinstance(self.state[0][i].piece, Circle) and self.state[0][i].piece.color == WHITE for i in range(COLS))
+        elif color == BLACK:
+            return any(isinstance(self.state[8][i].piece, Circle) and self.state[8][i].piece.color == BLACK for i in range(COLS))
     
     def _check_no_moves(self, color):
         for row in range(ROWS):
             for col in range(ROWS):
                 piece = self.state[row][col].piece
                 if isinstance(piece, Circle) and piece.color == color:
+                    self.calculate_moves(piece, row, col)
                     if piece.valid_moves:
                         return False
         return True
 
     def _check_no_pieces(self, color):
-        return not any(isinstance(piece, Piece) and piece.color == color for row in self.state for piece in row)
+        return not any(isinstance(square.piece, Piece) and square.piece.color == color for row in self.state for square in row)

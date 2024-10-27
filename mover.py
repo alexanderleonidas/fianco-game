@@ -14,9 +14,9 @@ class Mover:
         # Coordinates of mouse on the surface
         self.mouse_x, self.mouse_y = pos
 
-    def save_initial(self, pos):
-        self.initial_col = pos[0] // SQUARE_SIZE
-        self.initial_row = pos[1] // SQUARE_SIZE
+    def save_initial(self, row, col):
+        self.initial_col = col
+        self.initial_row = row
 
     def pick_piece(self, piece):
         self.piece = piece

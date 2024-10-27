@@ -10,7 +10,7 @@ class Piece:
         self.moved = False
 
     def add_moves(self, move):
-        self.valid_moves.append( move)
+        self.valid_moves.append(move)
     
     def clear_moves(self):
         self.valid_moves = []

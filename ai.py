@@ -1,6 +1,6 @@
 from const import *
 from board import Board
-import math
+import random
 from copy import deepcopy
 
 class AI():
@@ -65,10 +65,23 @@ class AI():
 
         return best_move
     
-    def eval(self):
+    def find_random_move(self, board: Board):
+        all_possible_moves = []
+        for i in range(ROWS):
+            for j in range(COLS):
+                piece = board.state[i][j].piece
+                if piece != None and piece.color == self.player:
+                    board.calculate_moves(piece, i, j)
+                    for move in piece.valid_moves:
+                        all_possible_moves.append(move)
+                    piece.clear_moves()
+        if all_possible_moves:
+            move = random.choice(all_possible_moves)
+        return move
+    
+    def eval(self, board: Board):
         if self.level == 0:
-            # Random choice
-            pass
+            return self.find_random_move(board)
         else:
             # Negamax
             pass
