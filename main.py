@@ -1,25 +1,26 @@
 import pygame
 import sys
+from copy import deepcopy
+import time
 from const import *
 from game import Game
+from gui import GUI
 
 class Main:
     def __init__(self):
-        # Initialize pygame
-        pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption('Fianco')
         self.game = Game()
+        self.gui = GUI(self.game)
 
     def main_loop(self):
 
-        screen = self.screen
+        clock = pygame.time.Clock()
+        gui = self.gui
         game = self.game
         board = self.game.board
         mover = self.game.mover
         # Game loop
         while True:
-            game.show_game(screen)
+            gui.show_game()
             for event in pygame.event.get():
                 # Click Event
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -36,10 +37,8 @@ class Main:
                             game.select_piece(clicked_square.piece, clicked_row, clicked_col)
                         if mover.selected and clicked_square != board.state[mover.initial_row][mover.initial_col] and clicked_square.is_empty():
                             game.move_piece(clicked_row, clicked_col)
-                            game.show_game(screen)
+                            gui.show_game()
 
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_u:
-                    game.unmove_piece()
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     game.reset()
                     game = self.game
@@ -51,11 +50,11 @@ class Main:
 
             if game.game_mode == 'pvc' and game.player == BLACK and game.running == True:
                 pygame.display.update()
-
                 game.make_ai_move()
-                game.show_game(screen)
+                gui.show_game()
             
             pygame.display.update()
+            clock.tick(FPS)
 
 main = Main()
 main.main_loop()

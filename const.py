@@ -10,6 +10,9 @@ ROWS = 9
 COLS = 9
 SQUARE_SIZE = WIDTH // COLS
 
+# Fram rate
+FPS = 50
+
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

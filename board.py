@@ -2,8 +2,6 @@ from const import *
 from square import Square
 from piece import Piece, Circle
 from move import Move
-import numpy as np
-
 class Board:
     def __init__(self):
         self.state = [[0,0,0,0,0,0,0,0,0] for _ in range(COLS)]
@@ -39,25 +37,28 @@ class Board:
         self.last_move = move
         print('Move :', move)
 
-    def undo_move(self):
-        initial = self.last_move.initial
-        final = self.last_move.final
+    def undo_move(self, move: Move):
+        initial = move.initial
+        final = move.final
         piece = self.state[final.row][final.col].piece
 
         # Check for capture and undo
+        capture = False
         if abs(initial.row - final.row) == 2:
             captured_row = (initial.row + final.row) // 2
             captured_col = (initial.col + final.col) // 2
             captured_piece = self.captured_pieces[piece.color].pop()
             self.state[captured_row][captured_col].piece = captured_piece
+            capture = True
 
         # Undo the move in the baord state
         self.state[initial.row][initial.col].piece = piece
         self.state[final.row][final.col].piece = None
 
-        # Remove last element
-        self.move_history.pop()
-        self.state_history.pop()
+        # Remove from history
+        idx = self.move_history.index(move.convert_to_notation(capture))
+        self.move_history.pop(idx)
+        self.state_history.pop(idx)
         # Check if they are the first moves of the players
         if len(self.move_history) == 0:
             piece.moved = False
@@ -67,7 +68,6 @@ class Board:
             self.last_move = Move.convert_to_move(self.move_history[0])
         else:
             self.last_move = Move.convert_to_move(self.move_history[-1])
-        piece.clear_moves()
 
     def valid_moves(self, piece, move):
         return move in piece.valid_moves
@@ -91,6 +91,7 @@ class Board:
                             if Square.in_range(land_row, land_col) and self.state[land_row][land_col].is_empty():
                                 final = Square(land_row, land_col)
                                 move = Move(initial, final)
+                                move.capture = True
                                 if move not in piece.valid_moves:
                                     piece.add_moves(move) # append new legal moves to piece class
                         if self.state[possible_row][possible_col].is_empty() and name == 'translation':

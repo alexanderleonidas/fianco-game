@@ -4,8 +4,8 @@ class Piece:
     def __init__(self, name, color, value):
         self.name = name
         self.color = color
-        value_sign = 1 if color == WHITE else -1 # Value sign needed for AI so white is positive and black in negative
-        self.value = value * value_sign
+        self.value_sign = 1 if color == WHITE else -1 # Value sign needed for AI so white is positive and black in negative
+        self.value = value * self.value_sign
         self.valid_moves = []
         self.moved = False
 
