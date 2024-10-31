@@ -10,7 +10,7 @@ class AI():
         self.level = level
         self.color = color
         self.player = -1 if color == BLACK else 1
-        self.max_depth = 1
+        self.max_depth = 3
 
     def eval(self, board: Board):
         if self.level == 0:
@@ -34,7 +34,7 @@ class AI():
                     possible_moves = piece.valid_moves
                     for move in possible_moves:
                         board.move_piece(piece, move)
-                        v, _ = self._negamax(board, depth - 1, -player, -beta, -alpha,)
+                        v, _ = self._negamax(deepcopy(board), depth - 1, -player, -beta, -alpha,)
                         value = -v
                         board.undo_move(move)
 

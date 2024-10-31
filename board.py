@@ -35,7 +35,6 @@ class Board:
         self.move_history.append(move.convert_to_notation(capture))
         self.state_history.append(self._get_state_hash())
         self.last_move = move
-        print('Move :', move)
 
     def undo_move(self, move: Move):
         initial = move.initial

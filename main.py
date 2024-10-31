@@ -38,6 +38,7 @@ class Main:
                         if mover.selected and clicked_square != board.state[mover.initial_row][mover.initial_col] and clicked_square.is_empty():
                             game.move_piece(clicked_row, clicked_col)
                             gui.show_game()
+                            print(board.last_move)
 
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     game.reset()
@@ -52,6 +53,8 @@ class Main:
                 pygame.display.update()
                 game.make_ai_move()
                 gui.show_game()
+                print(board.last_move)
+            
             
             pygame.display.update()
             clock.tick(FPS)
