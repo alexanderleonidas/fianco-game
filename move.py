@@ -6,7 +6,6 @@ class Move:
         # Initial and final squares
         self.initial = initial
         self.final = final
-        self.capture = False
     
     def __str__(self):
         return self.convert_to_notation()

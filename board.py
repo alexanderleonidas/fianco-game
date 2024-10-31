@@ -1,6 +1,6 @@
 from const import *
 from square import Square
-from piece import Piece, Circle
+from piece import Piece
 from move import Move
 class Board:
     def __init__(self):
@@ -30,7 +30,6 @@ class Board:
         self.state[initial.row][initial.col].piece = None
         self.state[final.row][final.col].piece = piece
 
-        piece.moved = True
         piece.clear_moves()
         self.move_history.append(move.convert_to_notation(capture))
         self.state_history.append(self._get_state_hash())
@@ -60,10 +59,8 @@ class Board:
         self.state_history.pop(idx)
         # Check if they are the first moves of the players
         if len(self.move_history) == 0:
-            piece.moved = False
             self.last_move = None
         elif len(self.move_history) == 1:
-            piece.moved = False
             self.last_move = Move.convert_to_move(self.move_history[0])
         else:
             self.last_move = Move.convert_to_move(self.move_history[-1])
@@ -74,10 +71,11 @@ class Board:
     def calculate_moves(self, piece: Piece, row, col):
         # Calculate all possible legal moves of of a piece on a specific position
         # There are 5 legal moves a piece can perform, left, up, right, capture on the diagonal jumping over the opponent
-        if isinstance(piece, Circle):
+        if isinstance(piece, Piece):
+            direction = -1 if piece.color == WHITE else 1
             pssible_moves = {
-                'translation': [(row, col-piece.direction), (row+piece.direction, col), (row, col+piece.direction)],
-                'capture': [(row+piece.direction, col-1), (row+piece.direction, col+1)]
+                'translation': [(row, col-direction), (row+direction, col), (row, col+direction)],
+                'capture': [(row+direction, col-1), (row+direction, col+1)]
                 }
             for name, possible_move in pssible_moves.items():
                 for possible_row, possible_col in possible_move:
@@ -85,12 +83,11 @@ class Board:
                         initial = Square(row, col)
                         if self.state[possible_row][possible_col].has_opponent(piece.color) and name == 'capture':
                             # Calculate the landing square for capture
-                            land_row = possible_row + piece.direction
+                            land_row = possible_row + direction
                             land_col = possible_col + (1 if possible_col > col else -1)
                             if Square.in_range(land_row, land_col) and self.state[land_row][land_col].is_empty():
                                 final = Square(land_row, land_col)
                                 move = Move(initial, final)
-                                move.capture = True
                                 if move not in piece.valid_moves:
                                     piece.add_moves(move) # append new legal moves to piece class
                         if self.state[possible_row][possible_col].is_empty() and name == 'translation':
@@ -118,22 +115,22 @@ class Board:
 
     def _add_pieces(self):
         for col in range(COLS):
-            self.state[0][col] = Square(0, col, Circle(BLACK))
-            self.state[8][col] = Square(8, col, Circle(WHITE))
+            self.state[0][col] = Square(0, col, Piece(BLACK))
+            self.state[8][col] = Square(8, col, Piece(WHITE))
 
-        self.state[1][1] = Square(1, 1, Circle(BLACK))
-        self.state[1][7] = Square(1, 7, Circle(BLACK))
-        self.state[2][2] = Square(2, 2, Circle(BLACK))
-        self.state[2][6] = Square(2, 6, Circle(BLACK))
-        self.state[3][3] = Square(3, 3, Circle(BLACK))
-        self.state[3][5] = Square(3, 5, Circle(BLACK))
+        self.state[1][1] = Square(1, 1, Piece(BLACK))
+        self.state[1][7] = Square(1, 7, Piece(BLACK))
+        self.state[2][2] = Square(2, 2, Piece(BLACK))
+        self.state[2][6] = Square(2, 6, Piece(BLACK))
+        self.state[3][3] = Square(3, 3, Piece(BLACK))
+        self.state[3][5] = Square(3, 5, Piece(BLACK))
 
-        self.state[7][1] = Square(7, 1, Circle(WHITE))
-        self.state[7][7] = Square(7, 7, Circle(WHITE))
-        self.state[6][2] = Square(6, 2, Circle(WHITE))
-        self.state[6][6] = Square(6, 6, Circle(WHITE))
-        self.state[5][3] = Square(5, 3, Circle(WHITE))
-        self.state[5][5] = Square(5, 5, Circle(WHITE))
+        self.state[7][1] = Square(7, 1, Piece(WHITE))
+        self.state[7][7] = Square(7, 7, Piece(WHITE))
+        self.state[6][2] = Square(6, 2, Piece(WHITE))
+        self.state[6][6] = Square(6, 6, Piece(WHITE))
+        self.state[5][3] = Square(5, 3, Piece(WHITE))
+        self.state[5][5] = Square(5, 5, Piece(WHITE))
     
     def _get_state_hash(self):
         return tuple(tuple(str(square) if square.piece != None else None for square in row) for row in self.state)
@@ -146,15 +143,15 @@ class Board:
     
     def _check_win_condition(self, color):
         if color == WHITE:
-            return any(isinstance(self.state[0][i].piece, Circle) and self.state[0][i].piece.color == WHITE for i in range(COLS))
+            return any(isinstance(self.state[0][i].piece, Piece) and self.state[0][i].piece.color == WHITE for i in range(COLS))
         elif color == BLACK:
-            return any(isinstance(self.state[8][i].piece, Circle) and self.state[8][i].piece.color == BLACK for i in range(COLS))
+            return any(isinstance(self.state[8][i].piece, Piece) and self.state[8][i].piece.color == BLACK for i in range(COLS))
     
     def _check_no_moves(self, color):
         for row in range(ROWS):
             for col in range(ROWS):
                 piece = self.state[row][col].piece
-                if isinstance(piece, Circle) and piece.color == color:
+                if isinstance(piece, Piece) and piece.color == color:
                     self.calculate_moves(piece, row, col)
                     if piece.valid_moves:
                         return False

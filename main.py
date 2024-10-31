@@ -55,7 +55,6 @@ class Main:
                 gui.show_game()
                 print(board.last_move)
             
-            
             pygame.display.update()
             clock.tick(FPS)
 

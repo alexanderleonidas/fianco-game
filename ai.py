@@ -1,7 +1,7 @@
 from const import *
 from board import Board
 from square import Square
-from move import Move
+from piece import Piece
 import random
 from copy import deepcopy
 
@@ -18,6 +18,10 @@ class AI():
         else:
             _, best_move = self._negamax(board, self.max_depth, self.player)
             return best_move
+    
+    #TODO implement iterative deepening
+    def _iterative_deepening():
+        pass
         
     def _negamax(self, board: Board, depth, player, alpha=float('-inf'), beta=float('inf')):
         best_move = None
@@ -31,8 +35,7 @@ class AI():
                 piece = board.state[row][col].piece
                 if piece != None and piece.value_sign == player:
                     board.calculate_moves(piece, row, col)
-                    possible_moves = piece.valid_moves
-                    for move in possible_moves:
+                    for move in piece.valid_moves:
                         board.move_piece(piece, move)
                         v, _ = self._negamax(deepcopy(board), depth - 1, -player, -beta, -alpha,)
                         value = -v
@@ -143,7 +146,7 @@ class AI():
                     supporters = 0
                     for dr, dc in directions:
                         new_row, new_col = row + dr, col + dc
-                        if (Square.in_range(new_row, new_col) and board.state[new_row][new_col].piece == piece):
+                        if (Square.in_range(new_row, new_col) and isinstance(board.state[new_row][new_col].piece, Piece)):
                             supporters += 1
                     
                     support_bonus = supporters * 0.1
