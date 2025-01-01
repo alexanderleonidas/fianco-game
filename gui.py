@@ -3,7 +3,7 @@ import pygame
 from game import Game
 from square import Square
 
-class GUI():
+class GUI:
     def __init__(self, game: Game):
         # Initialize pygame
         pygame.init()
@@ -28,16 +28,16 @@ class GUI():
         pygame.draw.rect(surface, BLACK, popup_rect, 2)
         
         # Draw popup text
-        winner = 'White' if self.player == WHITE else 'Black'
-        outcome_str = f"{winner} wins!" if outcome == 1 or outcome == 2 else "The game is a draw"
+        winner = 'White' if self.game.player == WHITE else 'Black'
+        outcome_str = f"{winner} wins!" if outcome == 1 or outcome == -1 else "The game is a draw"
         popup_text = pygame.font.Font(None, 36).render(outcome_str, 0, BLACK)
         text_rect = popup_text.get_rect(center=(WIDTH//2, HEIGHT//2))
         surface.blit(popup_text, text_rect)
         
-        # Draw close button
-        close_text = pygame.font.Font(None, 36).render("Click anywhere to close", True, BLACK)
-        close_rect = close_text.get_rect(center=(WIDTH//2, (HEIGHT - POPUP_HEIGHT) // 2 + POPUP_HEIGHT - 40))
-        surface.blit(close_text, close_rect)
+        # # Draw close button
+        # close_text = pygame.font.Font(None, 36).render("Click anywhere to close", True, BLACK)
+        # close_rect = close_text.get_rect(center=(WIDTH//2, (HEIGHT - POPUP_HEIGHT) // 2 + POPUP_HEIGHT - 40))
+        # surface.blit(close_text, close_rect)
 
     def _show_last_move(self, surface):
         if self.board.last_move:

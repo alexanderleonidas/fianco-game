@@ -2,10 +2,11 @@ from const import *
 from square import Square
 
 class Move:
-    def __init__(self, initial: Square, final: Square):
+    def __init__(self, initial: Square, final: Square, capture=False):
         # Initial and final squares
         self.initial = initial
         self.final = final
+        self.capture = capture
     
     def __str__(self):
         return self.convert_to_notation()
@@ -13,13 +14,12 @@ class Move:
     def __eq__(self, other):
         return self.initial == other.initial and self.final == other.final
 
-    def convert_to_notation(self, capture=False):
+    def convert_to_notation(self):
          # Convert square coordinates to chess board coordinate notation
         from_square = f"{Square.ALPHACOLS[self.initial.col]}{ROWS - self.initial.row}"
         to_square = f"{Square.ALPHACOLS[self.final.col]}{ROWS - self.final.row}"
         
-        if capture:
-            self.capture = capture
+        if self.capture:
             return f"{from_square}x{to_square}"
         else:
             return f"{from_square}-{to_square}"
