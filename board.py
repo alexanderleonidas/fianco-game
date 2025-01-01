@@ -118,20 +118,20 @@ class Board:
         self.state[5][3] = Square(5, 3, Piece(WHITE))
         self.state[5][5] = Square(5, 5, Piece(WHITE))
 
-    def final_state(self, color=WHITE):
+    def final_state(self, color):
         # Function to check win conditions and draw conditions
-        # Returns a value depending on the outcome: no win(0), white wins(1), black wins(2) or they draw(3),
+        # Returns a value depending on the outcome: no win(0), white wins(1), black wins(-1) or they draw(3),
         opponent = BLACK if color == WHITE else WHITE
         if self._check_win_condition(color) or self._check_no_pieces(opponent) or self._check_no_moves(opponent):
             return 1 if color == WHITE else -1
         elif self._check_threefold_repetition():
-            return 2
+            return 0.000001
         else:
             return 0
     
     def _get_state_hash(self):
         return tuple(tuple(str(square) if isinstance(square.piece, Piece) else None for square in row) for row in self.state)
-    
+
     def _check_threefold_repetition(self):
         if len(self.state_history) < 6:  # Need at least 6 moves for a threefold repetition
             return False

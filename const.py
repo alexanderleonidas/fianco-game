@@ -1,6 +1,9 @@
 # Screen Dimensions
+EXTRA_WIDTH = 250  # Extra width for the player info
 WIDTH = 900
-HEIGHT = 900
+HEIGHT = WIDTH
+NEW_WIDTH = WIDTH + EXTRA_WIDTH
+
 
 POPUP_WIDTH = 400
 POPUP_HEIGHT = 400
@@ -11,7 +14,7 @@ COLS = 9
 SQUARE_SIZE = WIDTH // COLS
 
 # Fram rate
-FPS = 50
+FPS = 60
 
 # Colors
 WHITE = (255, 255, 255)

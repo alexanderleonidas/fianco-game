@@ -7,17 +7,24 @@ class GUI:
     def __init__(self, game: Game):
         # Initialize pygame
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((NEW_WIDTH, HEIGHT))
         pygame.display.set_caption('Fianco')
         self.game = game
         self.board = game.board
         self.mover = game.mover
+
+        selected_player = self._show_player_selection_popup(self.screen)
+        game.user_player = selected_player
+
+        # Start the game after player selection
+        self.game.start_game()
         
     def show_game(self):
         self._show_background(self.screen)
         self._show_last_move(self.screen)
         self._show_moves(self.screen)
         self._show_pieces(self.screen)
+        self._show_info_panel(self.screen)
         if self.game.is_over():
             self._show_win_popup(self.screen, self.board.final_state(self.game.player))
     
@@ -33,11 +40,6 @@ class GUI:
         popup_text = pygame.font.Font(None, 36).render(outcome_str, 0, BLACK)
         text_rect = popup_text.get_rect(center=(WIDTH//2, HEIGHT//2))
         surface.blit(popup_text, text_rect)
-        
-        # # Draw close button
-        # close_text = pygame.font.Font(None, 36).render("Click anywhere to close", True, BLACK)
-        # close_rect = close_text.get_rect(center=(WIDTH//2, (HEIGHT - POPUP_HEIGHT) // 2 + POPUP_HEIGHT - 40))
-        # surface.blit(close_text, close_rect)
 
     def _show_last_move(self, surface):
         if self.board.last_move:
@@ -100,3 +102,111 @@ class GUI:
         elif color == WHITE:
             pygame.draw.circle(surface, BLACK, center, SQUARE_SIZE//2-12)
         pygame.draw.circle(surface, color, center, SQUARE_SIZE//2-15)
+
+    def _show_player_selection_popup(self, surface):
+        # Draw popup background
+        popup_rect = pygame.Rect((WIDTH - POPUP_WIDTH) // 2, (HEIGHT - POPUP_HEIGHT) // 2, POPUP_WIDTH, POPUP_HEIGHT)
+        pygame.draw.rect(surface, WHITE, popup_rect)
+        pygame.draw.rect(surface, BLACK, popup_rect, 2)
+
+        # Display instructions
+        instruction_text = pygame.font.Font(None, 28).render("Choose Your Player:", True, BLACK)
+        instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+        surface.blit(instruction_text, instruction_rect)
+
+        # Draw buttons
+        white_button_rect = pygame.Rect(WIDTH // 2 - 80, HEIGHT // 2, 60, 40)
+        black_button_rect = pygame.Rect(WIDTH // 2 + 20, HEIGHT // 2, 60, 40)
+        pygame.draw.rect(surface, LIGHT_GREEN, white_button_rect)
+        pygame.draw.rect(surface, DARK_GREEN, black_button_rect)
+
+        # Add text to buttons
+        white_text = pygame.font.Font(None, 24).render("White", True, BLACK)
+        black_text = pygame.font.Font(None, 24).render("Black", True, WHITE)
+        surface.blit(white_text, white_button_rect.move(10, 5))
+        surface.blit(black_text, black_button_rect.move(10, 5))
+
+        pygame.display.flip()
+
+        # Wait for user input
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if white_button_rect.collidepoint(event.pos):
+                        return WHITE
+                    elif black_button_rect.collidepoint(event.pos):
+                        return BLACK
+
+    def _show_info_panel(self, surface):
+        # Create a rectangle for the player display
+        player_rect = pygame.Rect(WIDTH, 0, EXTRA_WIDTH, HEIGHT)
+        pygame.draw.rect(surface, WHITE, player_rect)
+        pygame.draw.rect(surface, BLACK, player_rect, 2)
+
+        # Display the current player
+        player_text = f"Player to move: {'White' if self.game.player == WHITE else 'Black'}"
+        player_display = pygame.font.Font(None, 28).render(player_text, True, BLACK)
+        text_rect = player_display.get_rect(center=(WIDTH + EXTRA_WIDTH // 2, 50))
+        surface.blit(player_display, text_rect)
+
+        # Display move history
+        move_history = self.board.move_history
+        history_text = pygame.font.Font(None, 20)
+
+        # Define move history display area
+        start_y = 230  # Start below the player display text
+        box_height = HEIGHT - start_y - 20  # Leave some padding at the bottom
+        line_spacing = 25  # Adjust spacing between moves
+
+        # Calculate the maximum number of moves that can fit in the box
+        max_visible_moves = box_height // line_spacing
+
+        # Display the last `max_visible_moves` moves, maintaining absolute move indices
+        for i, move in enumerate(move_history[-max_visible_moves:],
+                                 start=len(move_history) - len(move_history[-max_visible_moves:])):
+            move_text = f"{i + 1}. {move}"  # Use the absolute move number
+            move_display = history_text.render(move_text, True, BLACK)
+            move_rect = move_display.get_rect(
+                topleft=(WIDTH + 10, start_y + (i - (len(move_history) - max_visible_moves)) * line_spacing))
+            surface.blit(move_display, move_rect)
+
+        # Display timers for both players
+        timer_font = pygame.font.Font(None, 28)
+        white_timer_text = f"White Time: {self._format_time(self.game.white_time)}"
+        black_timer_text = f"Black Time: {self._format_time(self.game.black_time)}"
+
+        white_timer_display = timer_font.render(white_timer_text, True, BLACK)
+        black_timer_display = timer_font.render(black_timer_text, True, BLACK)
+
+        white_timer_rect = white_timer_display.get_rect(center=(WIDTH + EXTRA_WIDTH // 2, 160))
+        black_timer_rect = black_timer_display.get_rect(center=(WIDTH + EXTRA_WIDTH // 2, 120))
+
+        self.screen.blit(white_timer_display, white_timer_rect)
+        self.screen.blit(black_timer_display, black_timer_rect)
+
+        # Update the current player's timer (not both)
+        if self.game.game_started and not self.game.is_over():
+            current_time = pygame.time.get_ticks()
+            elapsed_time = (current_time - self.game.last_tick) / 1000  # in seconds
+
+            if self.game.player == WHITE and self.game.user_player == WHITE:
+                self.game.white_time -= elapsed_time
+            elif self.game.player == BLACK and self.game.user_player == BLACK:
+                self.game.black_time -= elapsed_time
+
+            self.game.last_tick = current_time  # Update the last tick to the current time
+
+        # End the game if time runs out
+        if self.game.white_time <= 0 or self.game.black_time <= 0:
+            self.game.running = False
+            self.game.winner = 'Black' if self.game.white_time <= 0 else 'White'
+
+    @staticmethod
+    def _format_time(seconds):
+        """Formats time in seconds to a MM:SS string."""
+        minutes = int(seconds) // 60
+        seconds = int(seconds) % 60
+        return f"{minutes:02}:{seconds:02}"

@@ -1,31 +1,33 @@
-from traits.trait_types import self
-
 from const import *
 from board import Board
 from square import Square
 from piece import Piece
 import random
-from copy import deepcopy
+import time
 
 class AI:
-    def __init__(self, level=0, color=BLACK):
+    def __init__(self, level, color):
         self.level = level
         self.color = color
         self.player = -1 if color == BLACK else 1
         self.max_depth = 3
+        self.move_time = 0
 
     def eval(self, board: Board):
+        start_time = time.time()  # Start time tracking
         if self.level == 0:
-            return self._find_random_move(board)
+            move = self._find_random_move(board)
         else:
-            _, best_move = self._negamax(board, self.max_depth, self.player)
-            return best_move
+            move = self._iterative_deepening(board, self.max_depth, self.player)
+        time.sleep(1)
+        self.move_time = time.time() - start_time  # Calculate time taken for move
+        return move
         
     def _negamax(self, board: Board, depth, player, alpha=float('-inf'), beta=float('inf')):
         best_move = None
         best_value = float('-inf')
 
-        if depth == 0 or board.final_state() != 0:
+        if depth == 0 or board.final_state(self.color) != 0:
             return self._evaluate(board) * self.player, None
 
         # Get all the legal moves
@@ -39,10 +41,13 @@ class AI:
                     for move in piece.valid_moves:
                         legal_moves.append(move)
 
+        # Order moves: prioritize captures
+        legal_moves.sort(key=lambda m: 'x' in str(m), reverse=True)
+
         for move in legal_moves:
             board.move_piece(move.initial.piece, move)
             value, _ = self._negamax(board, depth - 1, -player, -beta, -alpha)
-            print(move.convert_to_notation(), value)
+            # print(move.convert_to_notation(), value)
             value = -value
             if value > best_value:
                 best_value = value
@@ -54,6 +59,22 @@ class AI:
                 break  # Beta cutoff
 
         return best_value, best_move
+
+    def _iterative_deepening(self, board: Board, max_depth, player):
+        best_move = None
+        for depth in range(1, max_depth + 1):
+            print(f"Searching depth: {depth}")
+            start_time = time.time()  # Record the start time for each depth
+            best_value, best_move = self._negamax(board, depth, player)
+            end_time = time.time()  # Record the end time for each depth
+
+            # Calculate the elapsed time for this depth
+            elapsed_time = end_time - start_time
+            print(
+                f"Depth {depth}: Best move: {best_move.convert_to_notation() if best_move else 'None'} "
+                f"with value {best_value}. Time taken: {elapsed_time:.4f} seconds"
+            )
+        return best_move
 
     def _find_random_move(self, board: Board):
         all_possible_moves = []
@@ -81,11 +102,31 @@ class AI:
         position_score = self._evaluate_positional_factors(board)
         mobility_score = self._evaluate_mobility(board)
         structure_score = self._evaluate_structure(board)
+
+        # time_factor = self._evaluate_time()
         
         final_score = (1.0 * material_score + 0.6 * position_score + 0.4 * mobility_score + 0.5 * structure_score)
-        final_score += 10000 * -board.final_state(self.color)
+        final_score += 10000 * -board.final_state(self.color) # Bonus for terminal move
         
         return final_score
+
+    # def _evaluate_time(self):
+    #     """
+    #     Evaluates based on the AI's remaining time.
+    #     Returns a bonus/penalty score based on how much time the AI has left.
+    #     """
+    #     # Assume the game object tracks time remaining for each player
+    #     if self.color == WHITE:
+    #         time_left = self.game.white_time
+    #         opponent_time_left = self.game.black_time
+    #     else:
+    #         time_left = self.game.black_time
+    #         opponent_time_left = self.game.white_time
+    #
+    #     # Time bonus: If the AI has more time than the opponent, add a positive bonus
+    #     time_bonus = (time_left - opponent_time_left) * 0.1  # Adjust the 0.1 factor as needed
+    #
+    #     return time_bonus
 
     @staticmethod
     def _calculate_material(board: Board):
