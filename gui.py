@@ -178,16 +178,17 @@ class GUI:
             surface.blit(black_text, black_button_rect.move(10, 5))
 
             # Difficulty text
-            difficulty_text = instruction_font.render("Choose Difficulty (0-5):", True, BLACK)
+            difficulty_text = instruction_font.render("Choose Difficulty (1-7):", True, BLACK)
             difficulty_rect = difficulty_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
             surface.blit(difficulty_text, difficulty_rect)
 
             # Difficulty buttons
             for btn_rect, diff in difficulty_buttons:
-                color = LIGHT_BLUE if diff % 2 == 0 else DARK_BLUE
+                color = LIGHT_BLUE if diff % 2 == 1 else DARK_BLUE
                 pygame.draw.rect(surface, color, btn_rect)
                 button_text = button_font.render(str(diff), True, WHITE)
-                surface.blit(button_text, btn_rect.move(10, 5))
+                text_rect = button_text.get_rect(center=btn_rect.center)
+                surface.blit(button_text, text_rect)
 
             # Highlight selections
             if selected_player == WHITE:
@@ -205,13 +206,15 @@ class GUI:
         # Button positions
         white_button_rect = pygame.Rect(WIDTH // 2 - 80, HEIGHT // 2 - 40, 60, 40)
         black_button_rect = pygame.Rect(WIDTH // 2 + 20, HEIGHT // 2 - 40, 60, 40)
+
+        # Updated difficulty buttons for 1-7
         difficulty_buttons = []
         button_width = 40
         button_spacing = 10
-        start_x = (WIDTH - (6 * button_width + 5 * button_spacing)) // 2
-        for i in range(6):
+        start_x = (WIDTH - (7 * button_width + 6 * button_spacing)) // 2
+        for i in range(7):
             button_rect = pygame.Rect(start_x + i * (button_width + button_spacing), HEIGHT // 2 + 50, button_width, 40)
-            difficulty_buttons.append((button_rect, i))
+            difficulty_buttons.append((button_rect, i + 1))  # i + 1 to make it 1-7 instead of 0-6
 
         # Selection variables
         selected_player = None
