@@ -32,6 +32,10 @@ class GUI:
         # Start the game after player selection
         self.game.start_game()
 
+    def reset(self):
+        self.game.reset()
+        self.__init__(self.game)
+
     def _ai_compute_best_move(self):
         """Runs the AI computation."""
         self.ai_running = True

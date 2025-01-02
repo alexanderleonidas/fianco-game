@@ -40,7 +40,8 @@ class Main:
                             ai_move_done = False
 
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                    game.reset()
+                    gui.reset()
+                    gui = self.gui
                     game = self.game
                     board = self.game.board
                     mover = self.game.mover

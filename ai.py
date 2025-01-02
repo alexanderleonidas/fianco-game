@@ -4,6 +4,28 @@ from square import Square
 from piece import Piece
 import random
 import time
+from typing import Dict, Tuple
+
+class TranspositionTable:
+    def __init__(self):
+        # Initialize Zobrist keys for each piece type and position
+        self.zobrist_keys = {
+            'white_piece': [[random.getrandbits(64) for _ in range(COLS)] for _ in range(ROWS)],
+            'black_piece': [[random.getrandbits(64) for _ in range(COLS)] for _ in range(ROWS)]
+        }
+        self.table: Dict[int, Tuple[float, int, str]] = {}  # hash -> (value, depth, flag)
+
+    def get_zobrist_key(self, board: Board) -> int:
+        """Calculate the Zobrist hash for the current board position"""
+        h = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece):
+                    piece_type = f"{'white' if piece.color == WHITE else 'black'}_{piece.__class__.__name__.lower()}"
+                    if piece_type in self.zobrist_keys:
+                        h ^= self.zobrist_keys[piece_type][row][col]
+        return h
 
 class AI:
     def __init__(self, level, color):
@@ -13,6 +35,7 @@ class AI:
         self.player = -1 if color == BLACK else 1
         self.max_depth = level
         self.move_time = 0
+        self.tt = TranspositionTable()
 
     def eval(self, board: Board):
         start_time = time.time()  # Start time tracking
@@ -20,15 +43,24 @@ class AI:
         time.sleep(1)
         self.move_time = time.time() - start_time  # Calculate time taken for move
         return move
-        
+
     def _negamax(self, board: Board, depth, player, alpha=float('-inf'), beta=float('inf')):
+        # Check transposition table
+        tt_entry = None
+        position_hash = self.tt.get_zobrist_key(board)
+
+        if position_hash in self.tt.table:
+            tt_entry = self.tt.table[position_hash]
+            if tt_entry[1] >= depth:  # If stored position was searched to sufficient depth
+                return tt_entry[0], None  # Return stored value
+
+        alpha_orig = alpha
         best_move = None
         best_value = float('-inf')
 
         if depth == 0 or board.final_state(self.color) != 0:
             return self._evaluate(board) * self.player, None
 
-        # Get all the legal moves
         legal_moves = []
         for row in range(ROWS):
             for col in range(COLS):
@@ -39,13 +71,12 @@ class AI:
                     for move in piece.valid_moves:
                         legal_moves.append(move)
 
-        # Order moves: prioritize captures
+        # Sort moves with captures first
         legal_moves.sort(key=lambda m: 'x' in str(m), reverse=True)
 
         for move in legal_moves:
             board.move_piece(move.initial.piece, move)
             value, _ = self._negamax(board, depth - 1, -player, -beta, -alpha)
-            # print(move.convert_to_notation(), value)
             value = -value
             if value > best_value:
                 best_value = value
@@ -54,7 +85,16 @@ class AI:
 
             alpha = max(alpha, value)
             if alpha >= beta:
-                break  # Beta cutoff
+                break
+
+        # Store position in transposition table
+        flag = 'EXACT'
+        if best_value <= alpha_orig:
+            flag = 'UPPERBOUND'
+        elif best_value >= beta:
+            flag = 'LOWERBOUND'
+
+        self.tt.table[position_hash] = (best_value, depth, flag)
 
         return best_value, best_move
 
