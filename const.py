@@ -13,8 +13,8 @@ ROWS = 9
 COLS = 9
 SQUARE_SIZE = WIDTH // COLS
 
-# Fram rate
-FPS = 60
+# Frame rate
+FPS = 30
 
 # Colors
 WHITE = (255, 255, 255)
@@ -25,3 +25,5 @@ GRAY = (185, 185, 185)
 RED = (255, 0, 0)
 NEON_GREEN = (244, 247, 116)
 DARK_NEON_GREEN = (172, 195, 51)
+LIGHT_BLUE = (173, 216, 230)
+DARK_BLUE = (100, 149, 237)

@@ -8,17 +8,15 @@ import time
 class AI:
     def __init__(self, level, color):
         self.level = level
+        print("AI level: ", level)
         self.color = color
         self.player = -1 if color == BLACK else 1
-        self.max_depth = 3
+        self.max_depth = level
         self.move_time = 0
 
     def eval(self, board: Board):
         start_time = time.time()  # Start time tracking
-        if self.level == 0:
-            move = self._find_random_move(board)
-        else:
-            move = self._iterative_deepening(board, self.max_depth, self.player)
+        move = self._iterative_deepening(board, self.max_depth, self.player)
         time.sleep(1)
         self.move_time = time.time() - start_time  # Calculate time taken for move
         return move
@@ -76,22 +74,9 @@ class AI:
             )
         return best_move
 
-    def _find_random_move(self, board: Board):
-        all_possible_moves = []
-        move=None
-        for i in range(ROWS):
-            for j in range(COLS):
-                piece = board.state[i][j].piece
-                if isinstance(piece, Piece) and piece.color == self.color:
-                    board.calculate_moves(piece, i, j)
-                    for move in piece.valid_moves:
-                        all_possible_moves.append(move)
-                    piece.clear_moves()
-        if all_possible_moves:
-            move = random.choice(all_possible_moves)
-        return move
-    
-    # Evaluation methods
+    #------------------------------#
+    #----- Evaluation methods -----#
+    # ------------------------------#
         
     def _evaluate(self, board: Board):
         """
