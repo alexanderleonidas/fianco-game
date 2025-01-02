@@ -22,7 +22,8 @@ class Board:
             captured_row = (initial.row + final.row) // 2
             captured_col = (initial.col + final.col) // 2
             captured_piece = self.state[captured_row][captured_col].piece
-            self.captured_pieces[WHITE if captured_piece.color == BLACK else BLACK].append(captured_piece)
+            self.captured_pieces[
+                WHITE if captured_piece.color == BLACK else BLACK].append(captured_piece)
             self.state[captured_row][captured_col].piece = None
 
         # Update board state
@@ -125,24 +126,34 @@ class Board:
         if self._check_win_condition(color) or self._check_no_pieces(opponent) or self._check_no_moves(opponent):
             return 1 if color == WHITE else -1
         elif self._check_threefold_repetition():
-            return 0.000001
+            return 0.00001
         else:
             return 0
     
     def _get_state_hash(self):
-        return tuple(tuple(str(square) if isinstance(square.piece, Piece) else None for square in row) for row in self.state)
+        return tuple(tuple(str(square) if isinstance(square.piece, Piece)
+                           else None for square in row) for row in self.state)
 
     def _check_threefold_repetition(self):
         if len(self.state_history) < 6:  # Need at least 6 moves for a threefold repetition
             return False
-        current_state = self.state_history[-1]
-        return self.state_history.count(current_state) >= 3
+
+        current_state = self._get_state_hash()
+        repetition_count = sum(1 for state in self.state_history if state == current_state)
+
+        # Include current position in count if it's already in history
+        if current_state in self.state_history:
+            repetition_count += 1
+
+        return repetition_count >= 3
     
     def _check_win_condition(self, color):
         if color == WHITE:
-            return any(isinstance(self.state[0][i].piece, Piece) and self.state[0][i].piece.color == WHITE for i in range(COLS))
+            return any(isinstance(self.state[0][i].piece, Piece)
+                       and self.state[0][i].piece.color == WHITE for i in range(COLS))
         elif color == BLACK:
-            return any(isinstance(self.state[8][i].piece, Piece) and self.state[8][i].piece.color == BLACK for i in range(COLS))
+            return any(isinstance(self.state[8][i].piece, Piece)
+                       and self.state[8][i].piece.color == BLACK for i in range(COLS))
     
     def _check_no_moves(self, color):
         for row in range(ROWS):
@@ -155,4 +166,5 @@ class Board:
         return True
 
     def _check_no_pieces(self, color):
-        return not any(isinstance(square.piece, Piece) and square.piece.color == color for row in self.state for square in row)
+        return not any(isinstance(square.piece, Piece)
+                       and square.piece.color == color for row in self.state for square in row)

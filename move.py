@@ -43,5 +43,4 @@ class Move:
         final_col = COL_NUMS[to_square[0]]
         final_row = ROWS - int(to_square[1])
 
-        
         return Move(Square(initial_row, initial_col), Square(final_row, final_col))

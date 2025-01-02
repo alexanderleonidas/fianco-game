@@ -107,7 +107,8 @@ class GUI:
                 # row coordinates
                 if col == 0:
                     color = BLACK if row % 2 == 0 else GRAY
-                    lbl = pygame.font.SysFont('monospace', 18, bold=True).render(str(ROWS-row), 1, color)
+                    lbl = (pygame.font.SysFont('monospace', 18, bold=True).
+                           render(str(ROWS-row), 1, color))
                     lbl_pos = (5, 5 + row * SQUARE_SIZE)
                     surface.blit(lbl, lbl_pos)
 
@@ -116,7 +117,8 @@ class GUI:
                     # color
                     color = BLACK if (row + col) % 2 == 0 else GRAY
                     # label
-                    lbl = pygame.font.SysFont('monospace', 18, bold=True).render(Square.get_alphacol(col), 1, color)
+                    lbl = (pygame.font.SysFont('monospace', 18, bold=True).
+                           render(Square.get_alphacol(col), 1, color))
                     lbl_pos = (col * SQUARE_SIZE + SQUARE_SIZE - 20, HEIGHT - 20)
                     # blit
                     surface.blit(lbl, lbl_pos)
@@ -147,17 +149,13 @@ class GUI:
             pygame.draw.circle(surface, BLACK, center, SQUARE_SIZE//2-12)
         pygame.draw.circle(surface, color, center, SQUARE_SIZE//2-15)
 
-    @staticmethod
-    def _show_player_selection_popup(surface):
+    def _show_player_selection_popup(self, surface):
         # Draw popup background
         popup_rect = pygame.Rect((WIDTH - POPUP_WIDTH) // 2, (HEIGHT - POPUP_HEIGHT) // 2, POPUP_WIDTH, POPUP_HEIGHT)
         pygame.draw.rect(surface, WHITE, popup_rect)
         pygame.draw.rect(surface, BLACK, popup_rect, 2)
 
         # Display instructions
-        instruction_font = pygame.font.Font(None, 28)
-        button_font = pygame.font.Font(None, 24)
-
         def draw_popup():
             """Redraws the popup and buttons."""
             surface.fill(WHITE)  # Clear the screen
@@ -165,20 +163,23 @@ class GUI:
             pygame.draw.rect(surface, BLACK, popup_rect, 2)
 
             # Instruction text
-            instruction_text = instruction_font.render("Choose Your Player:", True, BLACK)
+            restart_text = self.font_medium.render("Press 'r' Key to Restart Game", True, BLACK)
+            instruction_text = self.font_large.render("Choose Your Player:", True, BLACK)
+            restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 130))
             instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 80))
             surface.blit(instruction_text, instruction_rect)
+            surface.blit(restart_text, restart_rect)
 
             # Player buttons
             pygame.draw.rect(surface, LIGHT_GREEN, white_button_rect)
             pygame.draw.rect(surface, DARK_GREEN, black_button_rect)
-            white_text = button_font.render("White", True, BLACK)
-            black_text = button_font.render("Black", True, WHITE)
+            white_text = self.font_medium.render("White", True, BLACK)
+            black_text = self.font_medium.render("Black", True, WHITE)
             surface.blit(white_text, white_button_rect.move(10, 5))
             surface.blit(black_text, black_button_rect.move(10, 5))
 
             # Difficulty text
-            difficulty_text = instruction_font.render("Choose Difficulty (1-7):", True, BLACK)
+            difficulty_text = self.font_large.render("Choose Difficulty (1-7):", True, BLACK)
             difficulty_rect = difficulty_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
             surface.blit(difficulty_text, difficulty_rect)
 
@@ -186,7 +187,7 @@ class GUI:
             for btn_rect, diff in difficulty_buttons:
                 color = LIGHT_BLUE if diff % 2 == 1 else DARK_BLUE
                 pygame.draw.rect(surface, color, btn_rect)
-                button_text = button_font.render(str(diff), True, WHITE)
+                button_text = self.font_medium.render(str(diff), True, WHITE)
                 text_rect = button_text.get_rect(center=btn_rect.center)
                 surface.blit(button_text, text_rect)
 
@@ -213,7 +214,8 @@ class GUI:
         button_spacing = 10
         start_x = (WIDTH - (7 * button_width + 6 * button_spacing)) // 2
         for i in range(7):
-            button_rect = pygame.Rect(start_x + i * (button_width + button_spacing), HEIGHT // 2 + 50, button_width, 40)
+            button_rect = pygame.Rect(start_x + i *
+                                      (button_width + button_spacing), HEIGHT // 2 + 50, button_width, 40)
             difficulty_buttons.append((button_rect, i + 1))  # i + 1 to make it 1-7 instead of 0-6
 
         # Selection variables
@@ -317,7 +319,7 @@ class GUI:
 
     @staticmethod
     def _format_time(seconds):
-        """Formats time in seconds to a MM:SS string."""
+        """Formats time in seconds to an MM:SS string."""
         minutes = int(seconds) // 60
         seconds = int(seconds) % 60
         return f"{minutes:02}:{seconds:02}"

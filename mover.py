@@ -1,6 +1,3 @@
-import pygame
-from const import *
-
 class Mover:
     def __init__(self):
         self.mouse_x = 0

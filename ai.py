@@ -45,18 +45,21 @@ class AI:
         return move
 
     def _negamax(self, board: Board, depth, player, alpha=float('-inf'), beta=float('inf')):
-        # Check transposition table
-        tt_entry = None
         position_hash = self.tt.get_zobrist_key(board)
+        score = float('-inf')
 
+        # Try TT move first
         if position_hash in self.tt.table:
-            tt_entry = self.tt.table[position_hash]
-            if tt_entry[1] >= depth:  # If stored position was searched to sufficient depth
-                return tt_entry[0], None
-
-        alpha_orig = alpha
-        best_move = None
-        best_value = float('-inf')
+            stored_score, stored_depth, flag = self.tt.table[position_hash]
+            if stored_depth >= depth:
+                if flag == 'EXACT':
+                    return stored_score, None
+                elif flag == 'LOWERBOUND':
+                    alpha = max(alpha, stored_score)
+                elif flag == 'UPPERBOUND':
+                    beta = min(beta, stored_score)
+                if alpha >= beta:
+                    return stored_score, None
 
         if depth == 0:
             return self._quiescence_search(board, alpha, beta), None
@@ -64,7 +67,11 @@ class AI:
         if board.final_state(self.color) != 0:
             return self._evaluate(board) * self.player, None
 
+        # Generate and try TT move first if exists
         legal_moves = []
+        tt_move = None
+
+        # Generate moves
         for row in range(ROWS):
             for col in range(COLS):
                 piece = board.state[row][col].piece
@@ -72,34 +79,55 @@ class AI:
                     piece.clear_moves()
                     board.calculate_moves(piece, row, col)
                     for move in piece.valid_moves:
-                        legal_moves.append(move)
+                        # Check if this move leads to a TT position
+                        board.move_piece(piece, move)
+                        move_hash = self.tt.get_zobrist_key(board)
+                        board.undo_move(move)
 
-        # Simple move ordering: captures first
-        legal_moves.sort(key=lambda m: board.state[m.final.row][m.final.col].piece is not None, reverse=True)
+                        if move_hash == position_hash:
+                            tt_move = move
+                        else:
+                            legal_moves.append(move)
 
+        if not legal_moves and not tt_move:
+            return self._evaluate(board), None
+
+        best_move = None
+
+        # Try TT move first
+        if tt_move:
+            board.move_piece(tt_move.initial.piece, tt_move)
+            score = -self._negamax(board, depth - 1, -player, -beta, -alpha)[0]
+            board.undo_move(tt_move)
+            if score >= beta:
+                self.tt.table[position_hash] = (score, depth, 'LOWERBOUND')
+                return score, tt_move
+            best_move = tt_move
+            alpha = max(alpha, score)
+
+        # Try remaining moves
         for move in legal_moves:
             board.move_piece(move.initial.piece, move)
-            value, _ = self._negamax(board, depth - 1, -player, -beta, -alpha)
-            value = -value
-            if value > best_value:
-                best_value = value
-                best_move = move
+            value = -self._negamax(board, depth - 1, -player, -beta, -max(alpha, score))[0]
             board.undo_move(move)
 
-            alpha = max(alpha, value)
-            if alpha >= beta:
-                break
+            if value > score:
+                score = value
+                best_move = move
+                alpha = max(alpha, score)
+                if score >= beta:
+                    break
 
-        # Store position in transposition table
         flag = 'EXACT'
-        if best_value <= alpha_orig:
+        if score <= alpha:
             flag = 'UPPERBOUND'
-        elif best_value >= beta:
+        elif score >= beta:
             flag = 'LOWERBOUND'
 
-        self.tt.table[position_hash] = (best_value, depth, flag)
+        if position_hash not in self.tt.table or stored_depth <= depth:
+            self.tt.table[position_hash] = (score, depth, flag)
 
-        return best_value, best_move
+        return score, best_move
 
     def _iterative_deepening(self, board: Board, max_depth, player):
         best_move = None
@@ -118,9 +146,6 @@ class AI:
         return best_move
 
     def _quiescence_search(self, board: Board, alpha: float, beta: float, depth: int = 0) -> float:
-        """
-        Quiescence search optimized for two piece types
-        """
         stand_pat = self._evaluate(board) * self.player
 
         if stand_pat >= beta:
@@ -182,7 +207,7 @@ class AI:
         )
 
         # Terminal position bonus
-        final_score += 10000 * -board.final_state(self.color)
+        final_score += 100 * -board.final_state(self.color)
 
         # Game phase adjustments
         game_phase = self._determine_game_phase(board)

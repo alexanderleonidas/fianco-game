@@ -36,6 +36,9 @@ class Game:
     
     def reset(self):
         self.__init__()
+
+    def is_over(self):
+        return self.board.final_state(self.player) != 0
     
     def select_piece(self, piece, row: int, col: int):
         if piece.color == self.player:
@@ -77,6 +80,3 @@ class Game:
                 self.black_time -= self.ai.move_time
 
             return piece, move
-
-    def is_over(self):
-        return self.board.final_state(self.player) != 0
