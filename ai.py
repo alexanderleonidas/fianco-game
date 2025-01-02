@@ -52,13 +52,16 @@ class AI:
         if position_hash in self.tt.table:
             tt_entry = self.tt.table[position_hash]
             if tt_entry[1] >= depth:  # If stored position was searched to sufficient depth
-                return tt_entry[0], None  # Return stored value
+                return tt_entry[0], None
 
         alpha_orig = alpha
         best_move = None
         best_value = float('-inf')
 
-        if depth == 0 or board.final_state(self.color) != 0:
+        if depth == 0:
+            return self._quiescence_search(board, alpha, beta), None
+
+        if board.final_state(self.color) != 0:
             return self._evaluate(board) * self.player, None
 
         legal_moves = []
@@ -71,8 +74,8 @@ class AI:
                     for move in piece.valid_moves:
                         legal_moves.append(move)
 
-        # Sort moves with captures first
-        legal_moves.sort(key=lambda m: 'x' in str(m), reverse=True)
+        # Simple move ordering: captures first
+        legal_moves.sort(key=lambda m: board.state[m.final.row][m.final.col].piece is not None, reverse=True)
 
         for move in legal_moves:
             board.move_piece(move.initial.piece, move)
@@ -114,44 +117,180 @@ class AI:
             )
         return best_move
 
-    #------------------------------#
-    #----- Evaluation methods -----#
-    # ------------------------------#
-        
+    def _quiescence_search(self, board: Board, alpha: float, beta: float, depth: int = 0) -> float:
+        """
+        Quiescence search optimized for two piece types
+        """
+        stand_pat = self._evaluate(board) * self.player
+
+        if stand_pat >= beta:
+            return beta
+        if alpha < stand_pat:
+            alpha = stand_pat
+        if depth > -3:  # Limit quiescence depth
+            return stand_pat
+
+        # Generate capturing moves only
+        captures = []
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece) and piece.value_sign == self.player:
+                    piece.clear_moves()
+                    board.calculate_moves(piece, row, col)
+                    for move in piece.valid_moves:
+                        if board.state[move.final.row][move.final.col].piece is not None:
+                            captures.append(move)
+
+        for move in captures:
+            board.move_piece(move.initial.piece, move)
+            score = -self._quiescence_search(board, -beta, -alpha, depth - 1)
+            board.undo_move(move)
+
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+
+        return alpha
+
+    #----------------------------------------#
+    #---------- Evaluation methods ----------#
+    # ---------------------------------------#
+
     def _evaluate(self, board: Board):
         """
-        Evaluates a Fianco position from the given perspective.
-        Returns a score where positive is good for white, negative is good for black
+        Enhanced evaluation function optimized for two piece types (black and white)
         """
         material_score = self._calculate_material(board)
         position_score = self._evaluate_positional_factors(board)
         mobility_score = self._evaluate_mobility(board)
         structure_score = self._evaluate_structure(board)
+        king_safety_score = self._evaluate_king_safety(board)
+        development_score = self._evaluate_development(board)
+        control_score = self._evaluate_control(board)
 
-        # time_factor = self._evaluate_time()
-        
-        final_score = (1.0 * material_score + 0.6 * position_score + 0.4 * mobility_score + 0.5 * structure_score)
-        final_score += 10000 * -board.final_state(self.color) # Bonus for terminal move
-        
+        # Weighted combination of all factors
+        final_score = (
+                1.0 * material_score +
+                0.7 * position_score +
+                0.5 * mobility_score +
+                0.5 * structure_score +
+                0.8 * king_safety_score +
+                0.4 * development_score +
+                0.6 * control_score
+        )
+
+        # Terminal position bonus
+        final_score += 10000 * -board.final_state(self.color)
+
+        # Game phase adjustments
+        game_phase = self._determine_game_phase(board)
+        if game_phase == 'endgame':
+            final_score += self._evaluate_piece_positioning(board) * 0.5
+
         return final_score
 
-    # def _evaluate_time(self):
-    #     """
-    #     Evaluates based on the AI's remaining time.
-    #     Returns a bonus/penalty score based on how much time the AI has left.
-    #     """
-    #     # Assume the game object tracks time remaining for each player
-    #     if self.color == WHITE:
-    #         time_left = self.game.white_time
-    #         opponent_time_left = self.game.black_time
-    #     else:
-    #         time_left = self.game.black_time
-    #         opponent_time_left = self.game.white_time
-    #
-    #     # Time bonus: If the AI has more time than the opponent, add a positive bonus
-    #     time_bonus = (time_left - opponent_time_left) * 0.1  # Adjust the 0.1 factor as needed
-    #
-    #     return time_bonus
+    @staticmethod
+    def _evaluate_king_safety(board: Board):
+        """Evaluates piece safety based on surrounding friendly pieces"""
+        score = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece):
+                    # Check surrounding pieces for protection
+                    friendly_count = 0
+                    for dr, dc in [(1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1), (0, 1), (0, -1)]:
+                        new_row, new_col = row + dr, col + dc
+                        if Square.in_range(new_row, new_col):
+                            adjacent_piece = board.state[new_row][new_col].piece
+                            if isinstance(adjacent_piece, Piece) and adjacent_piece.color == piece.color:
+                                friendly_count += 1
+
+                    # Bonus for having protecting pieces
+                    score += friendly_count * 0.2 * piece.value_sign
+
+        return score
+
+    @staticmethod
+    def _evaluate_development(board: Board):
+        """Evaluates piece advancement and board control"""
+        score = 0
+
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece):
+                    # Bonus for advanced pieces
+                    if piece.color == WHITE:
+                        score += (row / ROWS) * 0.3  # More points for advancing toward opponent's side
+                    else:
+                        score -= ((ROWS - 1 - row) / ROWS) * 0.3
+
+                    # Control of key squares
+                    if 2 <= row <= 5 and 2 <= col <= 5:
+                        score += 0.3 * piece.value_sign
+
+        return score
+
+    @staticmethod
+    def _evaluate_control(board: Board):
+        """Evaluates control of key squares and lines"""
+        score = 0
+        controlled_squares = set()
+
+        # Calculate controlled squares for both sides
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece):
+                    board.calculate_moves(piece, row, col)
+                    for move in piece.valid_moves:
+                        controlled_squares.add((move.final.row, move.final.col, piece.value_sign))
+
+        # Score controlled squares
+        for row, col, value_sign in controlled_squares:
+            # Higher value for central squares
+            if 2 <= row <= 5 and 2 <= col <= 5:
+                score += 0.3 * value_sign
+            else:
+                score += 0.1 * value_sign
+
+        return score
+
+    @staticmethod
+    def _determine_game_phase(board: Board):
+        """Determines the current game phase based on piece count"""
+        piece_count = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                if isinstance(board.state[row][col].piece, Piece):
+                    piece_count += 1
+
+        if piece_count <= 6:
+            return 'endgame'
+        else:
+            return 'midgame'
+
+    @staticmethod
+    def _evaluate_piece_positioning(board: Board):
+        """Evaluates piece positioning, especially important in endgame"""
+        score = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board.state[row][col].piece
+                if isinstance(piece, Piece):
+                    # In endgame, centralized pieces are better
+                    center_distance = abs(4 - row) + abs(4 - col)
+                    score -= center_distance * 0.1 * piece.value_sign
+
+                    # Bonus for pieces advanced toward opponent's side
+                    if piece.color == WHITE:
+                        score += row * 0.1
+                    else:
+                        score -= (ROWS - 1 - row) * 0.1
+        return score
 
     @staticmethod
     def _calculate_material(board: Board):
