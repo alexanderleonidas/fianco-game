@@ -45,6 +45,7 @@ class Main:
                     game = self.game
                     board = self.game.board
                     mover = self.game.mover
+                    self.game.start_ai()
                     ai_move_done = False  # Reset AI move flag
 
                 elif game.game_mode == 'pvc' and game.player == game.ai_player and game.running == True:

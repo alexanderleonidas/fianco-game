@@ -135,16 +135,20 @@ class Board:
                            else None for square in row) for row in self.state)
 
     def _check_threefold_repetition(self):
-        if len(self.state_history) < 6:  # Need at least 6 moves for a threefold repetition
+        # Ensure we have enough moves to check for threefold repetition
+        if len(self.state_history) < 6:
             return False
 
+        # Consider only the last six states
+        recent_states = self.state_history[-6:]
+
+        # Get the hash of the current state
         current_state = self._get_state_hash()
-        repetition_count = sum(1 for state in self.state_history if state == current_state)
 
-        # Include current position in count if it's already in history
-        if current_state in self.state_history:
-            repetition_count += 1
+        # Count occurrences of the current state in the last six moves
+        repetition_count = sum(1 for state in recent_states if state == current_state)
 
+        # Check if it occurred three or more times
         return repetition_count >= 3
     
     def _check_win_condition(self, color):
